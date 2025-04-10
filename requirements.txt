@@ -43,8 +43,6 @@ flask==2.2.2
 fake_useragent==1.1.1
 python-dateutil==2.8.2
 sqlalchemy==1.4.41
-hashlib==<standard library>
-uuid==<standard library>
 azcaptchaapi==1.0.4
 selenium==4.8.0
 pillow==9.1.0
@@ -52,9 +50,3 @@ beautifulsoup4==4.11.1
 pandas==1.5.3
 undetected_chromedriver==3.1.5
 twocaptcha==1.1.0
-concurrent.futures==<standard library>
-threading==<standard library>
-re==<standard library>
-json==<standard library>
-time==<standard library>
-
