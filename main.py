@@ -2,7 +2,10 @@ from fastapi import FastAPI, Query
 import requests
 
 import datetime
-
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+import time
+import json
 # from flask import Flask, request, jsonify, send_file
 # from fake_useragent import UserAgent
 # import dateutil.parser
@@ -31,7 +34,7 @@ import pyodbc
 # from io import BytesIO
 # from selenium.webdriver.common.keys import Keys
 import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore")
 #import undetected_chromedriver as uc
 # import threading
 # from concurrent.futures import ThreadPoolExecutor
@@ -718,7 +721,7 @@ def execute_query(query, params=None, check_exists=None):
 
 def get_akasa_token():
     headers = {
-        'accept': 'application/json, text/plain, /',
+        'accept': 'application/json, text/plain, */*',
         'content-type': 'application/json',
         'origin': 'https://www.akasaair.com',
         'referer': 'https://www.akasaair.com/',
@@ -751,6 +754,28 @@ def get_airindia_oauth_token():
     return response.json()
 
 
+def get_cookie_value_by_key(url):
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")  # Use the new headless mode
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
+    chrome_options.add_argument("--window-size=1920,1080")
+
+    driver = webdriver.Chrome(options=chrome_options)
+
+    try:
+        driver.get(url)
+        time.sleep(5)  # Let scripts run to set cookies
+
+        cookies = driver.get_cookies()
+        token = [json.loads(i['value'])['token'] for i in cookies if i['name'] == 'auth_token'][0]
+
+        return token  # Return None if the cookie key isn't found
+    except Exception as ee:
+        print("error in token getting:",ee)
+        return None
+    finally:
+        driver.quit()
 
 @app.get("/akasaair_bookingdetails")
 def get_akasaair_booking_details(pnr: str = Query(...), lastname: str = Query(...)):
@@ -1018,12 +1043,12 @@ def get_airindia_express_booking_details(pnr: str = Query(...), lastname: str = 
 
         try:
 
-            table_insert = execute_query(insert_query_air_express,params, check_exists={
-    'table': 'FLT_HEADER_DEMO',
-    'column': 'GDSPNR',
-    'value': flight_data['GDSPNR']}
-                )
-            return {"data":maindata,"message":table_insert}
+    #         table_insert = execute_query(insert_query_air_express,params, check_exists={
+    # 'table': 'FLT_HEADER_DEMO',
+    # 'column': 'GDSPNR',
+    # 'value': flight_data['GDSPNR']}
+    #             )
+            return {"data":maindata}
         except Exception as ee:
             return {"error":ee}
 
@@ -1053,18 +1078,28 @@ def get_airindia_booking_details(pnr: str = Query(...), lastname: str = Query(..
 
 @app.get("/spicejet_bookingdetails")
 def get_spicejet_booking_details(pnr: str = Query(...), lastname: str = Query(...)):
-    headers = {
-        'Authorization': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkb3RSRVogQVBJIiwianRpIjoiYjM1OTZjYWYtNzIxMC04ODIzLTFjYWUtNzBjOWZkZTU4NmRiIiwiaXNzIjoiZG90UkVaIEFQSSJ9.q8v8McYrEoRiDin3hZ0tZkjEdXd1kAuv5tbU1-KKsoA",
-        'Referer': f'https://www.spicejet.com/trips/details?pnr={pnr}&last={lastname}',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Content-Type': 'application/json',
-        'os': 'desktop',
-    }
-    params = {'recordLocator': pnr, 'lastName': lastname}
-    json_data = {'userData': {}, 'method': 'GET'}
+    url =  'https://www.goindigo.in/?cid=Display|Affiliate|LF|LA74|2852&msclkid=ea46f85e6fb11ade5dea9fa9e7bdd265'
 
-    try:
-        response = requests.post('https://www.spicejet.com/api/v1/booking/retrieveBookingByPNR', params=params, headers=headers, json=json_data)
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
+    headers = {
+        'x-datadog-origin': 'rum',
+        'sec-ch-ua-platform': '"Windows"',
+        'Authorization': get_cookie_value_by_key(url),
+        'Referer': 'https://www.goindigo.in/',
+        'user_key': '2dbf6e57bb2e2047697712d144b1518b',
+        'sec-ch-ua': '"Microsoft Edge";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        'sec-ch-ua-mobile': '?0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',
+        'Content-Type': 'application/json',
+        'x-datadog-sampling-priority': '1',
+    }
+
+    params = {
+        'recordLocator': pnr,
+        'lastName': lastname,
+        'processFlag': 'edit-booking',
+    }
+
+    # response = requests.get('https://api-prod-itinerary-skyplus6e.goindigo.in/v1/booking/retrieve', params=params, headers=headers)
+    maindata = requests.get('https://api-prod-itinerary-skyplus6e.goindigo.in/v1/itinerary', headers=headers)
+
+    return maindata
