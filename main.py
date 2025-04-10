@@ -31,7 +31,7 @@ import pyodbc
 # from io import BytesIO
 # from selenium.webdriver.common.keys import Keys
 import warnings
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 #import undetected_chromedriver as uc
 # import threading
 # from concurrent.futures import ThreadPoolExecutor
