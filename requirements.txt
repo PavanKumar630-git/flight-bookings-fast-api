@@ -53,7 +53,6 @@ pyodbc==5.2.0
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-pywin32==310
 pyzmq==26.4.0
 requests==2.32.3
 selenium==4.30.0
